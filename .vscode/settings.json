@@ -1,0 +1,7 @@
+{
+    "editor.rulers": [80, 120],
+    "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: WebKit, ColumnLimit: 120}",
+    "files.associations": {
+        "stm32f1xx_hal.h": "c"
+    }
+}
