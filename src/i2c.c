@@ -1,4 +1,8 @@
 #include "i2c.h"
+#include "expander/gpio.h"
+#include "expander/pins.h"
+#include "i2c/register.h"
+#include "i2c/state_machine.h"
 
 I2C_HandleTypeDef hi2c1;
 
@@ -72,3 +76,58 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
         /* USER CODE END I2C1_MspDeInit 1 */
     }
 }
+
+enum I2CState i2c_state = STATE_INIT;
+
+uint8_t reg = 0;
+uint8_t data[8];
+
+void HAL_I2C_AddrCallback(I2C_HandleTypeDef* hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)
+{
+    if (TransferDirection == I2C_DIRECTION_TRANSMIT) { // Master wants to transmit
+        if (i2c_state == STATE_INIT) {
+            HAL_I2C_Slave_Seq_Receive_IT(hi2c, &reg, 1, I2C_NEXT_FRAME);
+            i2c_state = STATE_ACQUIRED_REGISTER;
+        }
+    } else {
+        HAL_I2C_Slave_Seq_Transmit_IT(hi2c, &reg, 1, I2C_FIRST_AND_LAST_FRAME);
+    }
+}
+
+void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) { }
+
+void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c)
+{
+    switch (i2c_state) {
+    case STATE_ACQUIRED_REGISTER:
+        if (reg == 0) {
+            HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, 2, I2C_LAST_FRAME);
+            i2c_state = STATE_RX_DATA;
+            return;
+        } 
+        goto err;
+    case STATE_RX_DATA:
+        if (reg == 0) {
+            ExpanderGpioWrite(*(uint16_t*)data);
+            i2c_state = STATE_INIT;
+            return;
+        }
+        goto err;
+    default:
+        goto err;
+    }
+
+err:
+    i2c_state = STATE_INIT;
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c)
+{
+    // HAL_I2C_DeInit(hi2c);
+    // HAL_I2C_Init(hi2c);
+    HAL_I2C_EnableListen_IT(hi2c);
+}
+
+void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef* hi2c) { HAL_I2C_EnableListen_IT(hi2c); }
+
+void HAL_I2C_AbortCpltCallback(I2C_HandleTypeDef* hi2c) { HAL_I2C_EnableListen_IT(hi2c); }

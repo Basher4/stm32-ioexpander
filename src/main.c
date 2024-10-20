@@ -13,10 +13,13 @@ int main(void)
     /* Initialize all configured peripherals */
     MX_GPIO_Init();
     MX_I2C1_Init();
+    HAL_I2C_EnableListen_IT(&hi2c1);
+
+    HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_SET);
 
     while (1) {
-        HAL_GPIO_TogglePin(OUT_LED_GPIO_Port, OUT_LED_Pin);
-        HAL_Delay(50);
+        // HAL_GPIO_TogglePin(OUT_LED_GPIO_Port, OUT_LED_Pin);
+        // HAL_Delay(250);
     }
 }
 

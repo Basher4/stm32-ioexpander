@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stm32f1xx_hal.h"
+
 #define OUT_LED_Pin              GPIO_PIN_13
 #define OUT_LED_GPIO_Port        GPIOC
 
