@@ -48,7 +48,7 @@ void ExpanderGpioSetPullResistor(GPIO_TypeDef* port, uint16_t pin, GpioPull pull
         gpio_init.Pull = GPIO_PULLDOWN;
     } else if (pull == PULL_UP) {
         gpio_init.Pull = GPIO_PULLUP;
-    } else { // Nothing needs to happen for no pull
+    } else {
         gpio_init.Pull = GPIO_NOPULL;
     }
 

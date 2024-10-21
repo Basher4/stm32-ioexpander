@@ -90,11 +90,20 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef* hi2c, uint8_t TransferDirection, ui
             i2c_state = STATE_ACQUIRED_REGISTER;
         }
     } else {
-        HAL_I2C_Slave_Seq_Transmit_IT(hi2c, &reg, 1, I2C_FIRST_AND_LAST_FRAME);
+        if (i2c_state == STATE_RX_DATA) {
+            if (reg == 0) {
+                ExpanderGpioRead((uint16_t*)data);
+                HAL_I2C_Slave_Seq_Transmit_IT(hi2c, data, 2, I2C_FIRST_AND_LAST_FRAME);
+                i2c_state = STATE_TX_DATA;
+            }
+        }
     }
 }
 
-void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c) { }
+void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c)
+{
+    i2c_state = STATE_INIT;
+}
 
 void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c)
 {
@@ -136,8 +145,8 @@ err:
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c)
 {
-    // HAL_I2C_DeInit(hi2c);
-    // HAL_I2C_Init(hi2c);
+    HAL_I2C_DeInit(hi2c);
+    HAL_I2C_Init(hi2c);
     HAL_I2C_EnableListen_IT(hi2c);
 }
 
