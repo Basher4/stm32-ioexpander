@@ -7,12 +7,12 @@
 I2C_HandleTypeDef hi2c1;
 
 /* I2C1 init function */
-void MX_I2C1_Init(void)
+void MX_I2C1_Init(uint8_t addr_mod)
 {
     hi2c1.Instance = I2C1;
     hi2c1.Init.ClockSpeed = 400000;
     hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-    hi2c1.Init.OwnAddress1 = 38;
+    hi2c1.Init.OwnAddress1 = (I2C_BASE_ADDRESS + addr_mod) << 1;
     hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
     hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
     hi2c1.Init.OwnAddress2 = 0;
