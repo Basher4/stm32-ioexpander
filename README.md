@@ -32,8 +32,8 @@ Designed for the cheapest blue pill clone with STM32F103C6 I could find on AliEx
 
 ## Address
 
-To change pull address pins C14 and C15 low. They are pulled high via an internal
-pull-up resistor. Addresses are as follows:
+To change the I2C address, pull pins C14 and C15 low. By default they are pulled
+high via an internal pull-up resistor. I2C addresses are as follows:
 
   | C14 | C15 | I2C Address |
   | --- | --- | ----------- |
