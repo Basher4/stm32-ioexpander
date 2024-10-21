@@ -49,7 +49,7 @@ All register values are little endian.
 - Register `0x00` (16 bits / 2B) - GPIO
   - READ : Read value of input pins.
   - WRITE: Set value of output pins.
-- Register `0x01` (24 bits / 3B)
+- Register `0x01` (32 bits / 4B)
   - READ : Always 0
   - WRITE: Set internal pull up / pull down resistor for input pins. Each input pin
            is described using 2 bits
