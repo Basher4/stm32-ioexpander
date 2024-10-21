@@ -1,5 +1,6 @@
 #include "main.h"
 #include "expander/pins.h"
+#include "expander/gpio.h"
 #include "gpio.h"
 #include "i2c.h"
 
@@ -17,9 +18,22 @@ int main(void)
 
     HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_SET);
 
+    uint16_t old_gpio_value, new_gpio_value;
+    ExpanderGpioRead(&old_gpio_value);
+
     while (1) {
-        // HAL_GPIO_TogglePin(OUT_LED_GPIO_Port, OUT_LED_Pin);
-        // HAL_Delay(250);
+        ExpanderGpioRead(&new_gpio_value);
+
+        if (old_gpio_value != new_gpio_value) {
+            old_gpio_value = new_gpio_value;
+            HAL_GPIO_WritePin(OUT_INT_GPIO_Port, OUT_INT_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_RESET);
+        } else {
+            HAL_GPIO_WritePin(OUT_INT_GPIO_Port, OUT_INT_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_SET);
+        }
+
+        ExpanderGpioWrite(new_gpio_value);
     }
 }
 

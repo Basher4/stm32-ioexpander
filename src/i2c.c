@@ -102,17 +102,30 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c)
     case STATE_ACQUIRED_REGISTER:
         if (reg == 0) {
             HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, 2, I2C_LAST_FRAME);
-            i2c_state = STATE_RX_DATA;
-            return;
-        } 
-        goto err;
+        } else if (reg == 1) {
+            HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, 4, I2C_LAST_FRAME);
+        } else {
+            goto err;
+        }
+
+        i2c_state = STATE_RX_DATA;
+        return;
     case STATE_RX_DATA:
         if (reg == 0) {
-            ExpanderGpioWrite(*(uint16_t*)data);
-            i2c_state = STATE_INIT;
-            return;
+            ExpanderGpioWrite(*(uint16_t*)data);    
+        } else if (reg == 1) {
+            for (int i = 0; i < EXPANDER_IN_COUNT; i++) {
+                GPIO_TypeDef *port = EXPANDER_IN_PORTS[i];
+                uint16_t pin = EXPANDER_IN_PINS[i];
+                uint8_t value = (data[i / 4] >> ((i % 4) * 2)) & 0b11;
+                ExpanderGpioSetPullResistor(port, pin, (GpioPull)value);
+            }
+        } else {
+            goto err;
         }
-        goto err;
+
+        i2c_state = STATE_INIT;
+        return;
     default:
         goto err;
     }

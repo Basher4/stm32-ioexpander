@@ -54,3 +54,7 @@
 #define IN7_GPIO_Port            GPIOA
 #define IN8_GPIO_Port            GPIOA
 #define IN9_GPIO_Port            GPIOA
+
+#define EXPANDER_IN_COUNT       10
+extern uint16_t EXPANDER_IN_PINS[];
+extern GPIO_TypeDef* EXPANDER_IN_PORTS[];
