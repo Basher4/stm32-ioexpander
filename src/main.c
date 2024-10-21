@@ -39,8 +39,6 @@ int main(void)
             HAL_GPIO_WritePin(OUT_INT_GPIO_Port, OUT_INT_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_SET);
         }
-
-        ExpanderGpioWrite(new_gpio_value);
     }
 }
 
