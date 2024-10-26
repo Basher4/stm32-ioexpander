@@ -1,8 +1,8 @@
 #include "main.h"
+#include "expander/expander.h"
 #include "expander/gpio.h"
 #include "expander/pins.h"
 #include "gpio.h"
-#include "i2c.h"
 
 void SystemClock_Config(void);
 
@@ -13,17 +13,7 @@ int main(void)
 
     MX_GPIO_Init();
 
-    uint8_t i2c_addr_mod = 0;
-    if (!HAL_GPIO_ReadPin(I2C_ADDR_0_GPIO_Port, I2C_ADDR_0_Pin)) {
-        i2c_addr_mod += 1;
-    }
-    if (!HAL_GPIO_ReadPin(I2C_ADDR_1_GPIO_Port, I2C_ADDR_1_Pin)) {
-        i2c_addr_mod += 2;
-    }
-    MX_I2C1_Init(i2c_addr_mod);
-    HAL_I2C_EnableListen_IT(&hi2c1);
-
-    HAL_GPIO_WritePin(OUT_LED_GPIO_Port, OUT_LED_Pin, GPIO_PIN_SET);
+    Expander_Init();
 
     uint16_t old_gpio_value, new_gpio_value;
     ExpanderGpioRead(&old_gpio_value);

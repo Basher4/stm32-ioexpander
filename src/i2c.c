@@ -80,7 +80,8 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
 enum I2CState i2c_state = STATE_INIT;
 
 uint8_t reg = 0;
-uint8_t data[8];
+uint8_t data[I2C_REGISTER_MAX_LENGTH];
+I2CRegister_t *cur_register = NULL;
 
 void HAL_I2C_AddrCallback(I2C_HandleTypeDef* hi2c, uint8_t TransferDirection, uint16_t AddrMatchCode)
 {
@@ -90,18 +91,26 @@ void HAL_I2C_AddrCallback(I2C_HandleTypeDef* hi2c, uint8_t TransferDirection, ui
             i2c_state = STATE_ACQUIRED_REGISTER;
         }
     } else {
+        // Master wants to read data from the register.
         if (i2c_state == STATE_RX_DATA) {
-            if (reg == 0) {
-                ExpanderGpioRead((uint16_t*)data);
-                HAL_I2C_Slave_Seq_Transmit_IT(hi2c, data, 2, I2C_FIRST_AND_LAST_FRAME);
-                i2c_state = STATE_TX_DATA;
+            // Read and transmit data from the register.
+            if (cur_register->read) {
+                cur_register->read(data);
             }
+
+            HAL_I2C_Slave_Seq_Transmit_IT(hi2c, data, cur_register->size, I2C_FIRST_AND_LAST_FRAME);
+
+            // Update I2C state machine.
+            i2c_state = STATE_TX_DATA;
         }
     }
 }
 
 void HAL_I2C_SlaveTxCpltCallback(I2C_HandleTypeDef* hi2c)
 {
+    assert_param(i2c_state == STATE_TX_DATA);
+
+    cur_register = NULL;
     i2c_state = STATE_INIT;
 }
 
@@ -109,31 +118,25 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c)
 {
     switch (i2c_state) {
     case STATE_ACQUIRED_REGISTER:
-        if (reg == 0) {
-            HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, 2, I2C_LAST_FRAME);
-        } else if (reg == 1) {
-            HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, 4, I2C_LAST_FRAME);
-        } else {
-            goto err;
-        }
+        // Find the target register.
+        cur_register = I2CRegisterFind(reg);
+        if (cur_register == NULL) { goto err; }
 
+        // Receive data destined for register write.
+        HAL_I2C_Slave_Seq_Receive_IT(hi2c, data, cur_register->size, I2C_LAST_FRAME);
+
+        // Update I2C state machine.
         i2c_state = STATE_RX_DATA;
         return;
     case STATE_RX_DATA:
-        if (reg == 0) {
-            ExpanderGpioWrite(*(uint16_t*)data);    
-        } else if (reg == 1) {
-            for (int i = 0; i < EXPANDER_IN_COUNT; i++) {
-                GPIO_TypeDef *port = EXPANDER_IN_PORTS[i];
-                uint16_t pin = EXPANDER_IN_PINS[i];
-                uint8_t value = (data[i / 4] >> ((i % 4) * 2)) & 0b11;
-                ExpanderGpioSetPullResistor(port, pin, (GpioPull)value);
-            }
-        } else {
-            goto err;
+        // Data was received. Write to the register.
+        if (cur_register->write) {
+            cur_register->write(data);
         }
 
+        // Update I2C state machine.
         i2c_state = STATE_INIT;
+        cur_register = NULL;
         return;
     default:
         goto err;
@@ -141,6 +144,7 @@ void HAL_I2C_SlaveRxCpltCallback(I2C_HandleTypeDef* hi2c)
 
 err:
     i2c_state = STATE_INIT;
+    cur_register = NULL;
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c)
@@ -148,6 +152,9 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef* hi2c)
     HAL_I2C_DeInit(hi2c);
     HAL_I2C_Init(hi2c);
     HAL_I2C_EnableListen_IT(hi2c);
+
+    cur_register = NULL;
+    i2c_state = STATE_INIT;
 }
 
 void HAL_I2C_ListenCpltCallback(I2C_HandleTypeDef* hi2c) { HAL_I2C_EnableListen_IT(hi2c); }
